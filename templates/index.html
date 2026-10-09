@@ -31,7 +31,7 @@ async function loadOrders() {
       const action = document.createElement("td");
       const button = document.createElement("button");
       button.textContent = "Marcar como enviado";
-      button.disabled = order.status === "enviado";
+      button.disabled = order.status !== "pendiente";
       button.onclick = () => ship(order.id, button);
       action.append(button); row.append(action); body.append(row);
     }
@@ -39,13 +39,23 @@ async function loadOrders() {
     body.innerHTML = '<tr><td colspan="5">No se pudieron cargar los pedidos. Recarga la página.</td></tr>';
   }
 }
+function showToast(msg) {
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = msg;
+  document.body.append(toast);
+  requestAnimationFrame(() => toast.classList.add("show"));
+  setTimeout(() => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 300); }, 4000);
+}
 async function ship(id, button) {
   button.disabled = true;
   try {
     const response = await fetch(`/api/orders/${id}/ship`, {method:"POST"});
-    if (!response.ok) throw new Error();
+    const data = await response.json();
+    if (!response.ok) { showToast(data.error || "Error al actualizar el pedido."); button.disabled = false; return; }
     await loadOrders();
   } catch {
+    showToast("Error de conexión. Intenta de nuevo.");
     button.disabled = false;
   }
 }
