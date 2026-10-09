@@ -2,6 +2,41 @@
 
 Aplicación pequeña de gestión de pedidos con Flask, SQLite y JavaScript nativo. Tiempo estimado: **30–45 minutos**. Puedes usar asistentes de IA.
 
+## Resolución
+
+### Problemas encontrados
+
+1. **El servidor permitía enviar pedidos cancelados.** El endpoint `POST /api/orders/<id>/ship` solo validaba el estado `enviado`, pero no `cancelado`. Un pedido cancelado pasaba a enviado sin restricción.
+2. **Errores silenciosos en la UI.** Cuando una actualización fallaba, el `catch` solo re-habilitaba el botón sin mostrar ningún mensaje al usuario.
+
+### Diagnóstico y solución
+
+- **Backend (`app.py`):** se agregó una validación que rechaza con `409` los pedidos con estado `cancelado`, devolviendo un mensaje claro en JSON.
+- **Frontend (`index.html`):** se creó una función `showToast()` que muestra un mensaje de error visible (toast rojo animado) con el texto que devuelve el servidor. Se actualizó `ship()` para leer la respuesta JSON y mostrar el error en lugar de fallar en silencio.
+- **CSS (`style.css`):** se añadieron estilos para el componente toast.
+
+### Cómo probarlo
+
+1. Levantar el servidor (`python app.py`).
+2. **Prueba por UI:** abrir `http://127.0.0.1:5000`, hacer clic en "Marcar como enviado" en un pedido **pendiente** → debe cambiar a enviado. Los botones de pedidos cancelados y enviados están deshabilitados.
+3. **Prueba por curl** (valida el backend directamente):
+   ```bash
+   # Pedido pendiente → debe funcionar (200)
+   curl -X POST http://localhost:5000/api/orders/1/ship
+
+   # Pedido cancelado → debe fallar (409)
+   curl -X POST http://localhost:5000/api/orders/3/ship
+
+   # Pedido ya enviado → debe fallar (409)
+   curl -X POST http://localhost:5000/api/orders/2/ship
+   ```
+4. Para reiniciar los datos: `python seed.py`.
+
+> **Nota sobre el proceso:** durante el desarrollo se habilitó temporalmente el botón para pedidos cancelados con el fin de verificar visualmente el toast de error desde la UI. Tras confirmar el funcionamiento, se restauró la validación en el frontend (defensa en profundidad).
+
+**Uso de IA:** ~70% trabajo humano (diagnóstico, decisiones de diseño, pruebas manuales) y ~30% asistencia de IA (sugerencias de implementación y revisión de código).
+
+
 ## Preparación
 
 Requiere Python 3.11 o superior. En la raíz del repositorio:
